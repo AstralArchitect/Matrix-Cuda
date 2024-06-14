@@ -1,33 +1,35 @@
 #include <stdio.h>
+#include <stdlib.h>
+
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 #include "matrix.h"
 #include "kernel_call.h"
 
-void matrixMultiplication(float *A, float *B, float *C, int N);
-void matrixAddition(float *A, float *B, float *C, int N);
-void matrix_float_Addition(float *A, float num, float *C, int N);
-
-Matrix::Matrix(int N)
+Matrix::Matrix(unsigned int dimX, unsigned int dimY)
 {
-    cudaError_t result = cudaMalloc(&matrix_d, N * N * sizeof(float));
+    cudaError_t result = cudaMalloc((void**)&matrix_d, dimX * dimY * sizeof(double));
     if (result != cudaSuccess)
     {
         printf("Error: failed to allocate memory on device (%s).\n", cudaGetErrorString(result));
         exit(1);
     }
-    size = N;
+    size.x = dimX;
+    size.y = dimY;
 }
 
 Matrix::Matrix(const Matrix& other)
 {
-    size = other.size;
-    cudaError_t result = cudaMalloc(&matrix_d, size * size * sizeof(float));
+    size.x = other.size.x;
+    size.y = other.size.y;
+    cudaError_t result = cudaMalloc((void**)&matrix_d, size.x * size.y * sizeof(double));
     if (result != cudaSuccess)
     {
         printf("Error: failed to allocate memory on device (%s).\n", cudaGetErrorString(result));
         exit(1);
     }
-    result = cudaMemcpy(matrix_d, other.matrix_d, size * size * sizeof(float), cudaMemcpyDeviceToDevice);
+    result = cudaMemcpy(matrix_d, other.matrix_d, size.x * size.y * sizeof(double), cudaMemcpyDeviceToDevice);
     if (result != cudaSuccess)
     {
         printf("Error: failed to copy device memory (%s).\n", cudaGetErrorString(result));
@@ -58,13 +60,13 @@ Matrix& Matrix::operator=(const Matrix& other)
         }
 
         size = other.size;
-        cudaError_t result = cudaMalloc(&matrix_d, size * size * sizeof(float));
+        cudaError_t result = cudaMalloc((void**)&matrix_d, size.x * size.y * sizeof(double));
         if (result != cudaSuccess)
         {
             printf("Error: failed to allocate memory on device (%s).\n", cudaGetErrorString(result));
             exit(1);
         }
-        result = cudaMemcpy(matrix_d, other.matrix_d, size * size * sizeof(float), cudaMemcpyDeviceToDevice);
+        result = cudaMemcpy(matrix_d, other.matrix_d, size.x * size.y * sizeof(double), cudaMemcpyDeviceToDevice);
         if (result != cudaSuccess)
         {
             printf("Error: failed to copy device memory (%s).\n", cudaGetErrorString(result));
@@ -76,44 +78,44 @@ Matrix& Matrix::operator=(const Matrix& other)
 
 Matrix Matrix::operator*(Matrix const& matrix)
 {
-    if (matrix.size != size)
+    if (matrix.size.x != size.x && matrix.size.y != size.y)
     {
         printf("Error: can't multiply two matrices of different sizes\n");
         exit(1);
     }
     
-    Matrix res(size);
-    matrixMultiplication(matrix_d, matrix.matrix_d, res.matrix_d, size);
+    Matrix res(size.x, size.y);
+    matrixMultiplication(matrix_d, matrix.matrix_d, res.matrix_d, size.x, size.y);
 
     return res;
 }
 
 Matrix Matrix::operator+(Matrix const& matrix)
 {
-    if (matrix.size != size)
+    if (matrix.size.x != size.x && matrix.size.y != size.y)
     {
         printf("Error: can't add two matrices of different sizes\n");
         exit(1);
     }
     
-    Matrix res(size);
-    matrixAddition(matrix_d, matrix.matrix_d, res.matrix_d, size);
+    Matrix res(size.x, size.y);
+    matrixAddition(matrix_d, matrix.matrix_d, res.matrix_d, size.x, size.y);
 
     return res;
 }
 
-Matrix Matrix::operator+(float num)
+Matrix Matrix::operator+(double num)
 {
-    Matrix res(size);
-    matrix_float_Addition(matrix_d, num, res.matrix_d, size);
+    Matrix res(size.x, size.y);
+    matrix_double_Addition(matrix_d, num, res.matrix_d, size.x, size.y);
 
     return res;
 }
 
-float Matrix::get(int x, int y)
+double Matrix::get(int x, int y)
 {
-    float element;
-    cudaError_t result = cudaMemcpy(&element, matrix_d + size * y + x, sizeof(float), cudaMemcpyDeviceToHost);
+    double element;
+    cudaError_t result = cudaMemcpy(&element, matrix_d + size.x * y + x, sizeof(double), cudaMemcpyDeviceToHost);
     if (result != cudaSuccess)
     {
         printf("Error: failed to copy to host memory (%s)\n", cudaGetErrorString(result));
@@ -123,12 +125,17 @@ float Matrix::get(int x, int y)
     return element;
 }
 
-void Matrix::set(int x, int y, float value)
+void Matrix::set(int x, int y, double value)
 {
-    cudaError_t result = cudaMemcpy(matrix_d + size * y + x, &value, sizeof(float), cudaMemcpyHostToDevice);
+    cudaError_t result = cudaMemcpy(matrix_d + size.x * y + x, &value, sizeof(double), cudaMemcpyHostToDevice);
     if (result != cudaSuccess)
     {
         printf("Error: failed to copy to device memory (%s)\n", cudaGetErrorString(result));
         exit(1);
     }
+}
+
+double *Matrix::getPtr()
+{
+    return matrix_d;
 }
