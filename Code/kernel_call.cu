@@ -22,9 +22,9 @@ void destroyCuBLAS()
     cublasDestroy(handle);
 }
 
-void matrixMultiplication(double *A, double *B, double *C, int dimX, int dimY)
+void matrixMultiplication(float *A, float *B, float *C, int dimX, int dimY)
 {
-    /*dim3 threadsPerBlock(16, 16);
+    /*dim3 threadsPerBlock(8, 8);
     dim3 blocksPerGrid((dimX + threadsPerBlock.x - 1) / threadsPerBlock.x, (dimY + threadsPerBlock.y - 1) / threadsPerBlock.y);
     
     Mat2DMult<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, dimX, dimY);
@@ -36,13 +36,13 @@ void matrixMultiplication(double *A, double *B, double *C, int dimX, int dimY)
     float beta = 0.0f;
 
     cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, dimX, dimY, dimY, &alpha,
-                 A, CUDA_R_64F, dimX,
-                 B, CUDA_R_64F, dimX,
-                 &beta, C, CUDA_R_64F, dimX,
-                 CUDA_R_64F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+                 A, CUDA_R_32F, dimX,
+                 B, CUDA_R_32F, dimX,
+                 &beta, C, CUDA_R_32F, dimX,
+                 CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
 }
 
-void matrixAddition(double *A, double *B, double *C, int dimX, int dimY)
+void matrixAddition(float *A, float *B, float *C, int dimX, int dimY)
 {
     dim3 threadsPerBlock(16, 16);
     dim3 blocksPerGrid((dimX + threadsPerBlock.x - 1) / threadsPerBlock.x, (dimY + threadsPerBlock.y - 1) / threadsPerBlock.y);
@@ -52,12 +52,12 @@ void matrixAddition(double *A, double *B, double *C, int dimX, int dimY)
     cudaDeviceSynchronize();
 }
 
-void matrix_double_Addition(double *A, double num, double *C, int dimX, int dimY)
+void matrix_float_Addition(float *A, float num, float *C, int dimX, int dimY)
 {
     dim3 threadsPerBlock(16, 16);
     dim3 blocksPerGrid((dimX + threadsPerBlock.x - 1) / threadsPerBlock.x, (dimY + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-    Mat2D_double_Add<<<blocksPerGrid, threadsPerBlock>>>(A, num, C, dimX, dimY);
+    Mat2D_float_Add<<<blocksPerGrid, threadsPerBlock>>>(A, num, C, dimX, dimY);
 
     cudaDeviceSynchronize();
 }

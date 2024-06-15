@@ -5,6 +5,7 @@
 #endif
 
 #include <time.h>
+#include <random>
 
 #include "matrix.h"
 
@@ -14,7 +15,7 @@
 void initCuBLAS();
 void destroyCuBLAS();
 
-const unsigned int dimX = 15000;
+const unsigned int dimX = 4;
 const unsigned int dimY = dimX;
 
 int main()
@@ -24,38 +25,55 @@ int main()
     #endif
     initCuBLAS();
 
-    double *matrix_h = (double*)malloc(dimX * dimY * sizeof(double));
-    if (matrix_h == NULL)
+    Matrix matrixA(dimX, dimY, 10.0f);
+
+    std::srand(time(NULL));
+
+    printf("First Matrix:\n");
+    for (int i = 0; i < dimX; i++)
     {
-        printf("Erreur d'allocation dynamique de mémoire\n");
+        for (int j = 0; j < dimY; j++)
+        {
+            printf("%f\n", matrixA.get(i, j));
+        }
     }
-    
-    double *matrix_d = NULL;
 
-    for (int i = 0; i < dimX * dimY; i++)
+    Matrix matrixB(4, 4, 5.0f);
+
+    matrixA *= matrixA;
+
+    matrixB += matrixA;
+
+    printf("Second Matrix A:\n");
+    for (int i = 0; i < dimX; i++)
     {
-        matrix_h[i] = 5.0f;
+        for (int j = 0; j < dimY; j++)
+        {
+            printf("%f\n", matrixA.get(i, j));
+        }
     }
 
-    Matrix myMatrix(dimX, dimY);
+    printf("Second Matrix B:\n");
+    for (int i = 0; i < dimX; i++)
+    {
+        for (int j = 0; j < dimY; j++)
+        {
+            printf("%f\n", matrixB.get(i, j));
+        }
+    }
 
-    matrix_d = myMatrix.getPtr();
+    Matrix matrixC(4, 4, 0.0f);
 
-    cudaMemcpy(matrix_d, matrix_h, (unsigned long long)dimX * (unsigned long long)dimY * sizeof(double), cudaMemcpyHostToDevice);
+    matrixC = matrixA * matrixB;
 
-    free(matrix_h);
-
-    printf("Multiplication...\n");
-
-    time_t start, stop;
-
-    start = time(NULL);
-
-    myMatrix = myMatrix * myMatrix;
-
-    stop = time(NULL);
-
-    printf("terminé en %lld secondes\n", stop - start);
+    printf("First Matrix C:\n");
+    for (int i = 0; i < dimX; i++)
+    {
+        for (int j = 0; j < dimY; j++)
+        {
+            printf("%f\n", matrixC.get(i, j));
+        }
+    }
 
     destroyCuBLAS();
 
